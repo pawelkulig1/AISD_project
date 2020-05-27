@@ -74,11 +74,13 @@ class Graph:
     def add_node(self, label) -> None:
         self.nodes.append(Node(label))
 
-    def add_connection(self, begin, end) -> None:
+    def add_connection(self, begin, end, weight) -> None:
         begin_node = self.__find_node(begin)
         end_node = self.__find_node(end)
 
         begin_node.neighbours.append(end_node)
+
+        #TODO - Dodać do grafu obsługę wag - parametr: weight
 
     def __find_node(self, label):
         return next(node for node in self.nodes if node.label == label)
