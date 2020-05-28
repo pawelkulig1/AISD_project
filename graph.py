@@ -1,7 +1,7 @@
 class Node:
     def __init__(self, label) -> None:
         self.label = label
-        self.neighbours = []
+        self.neighbours = {}
 
 
 class Graph:
@@ -9,7 +9,7 @@ class Graph:
         self.nodes = []
 
     def find_neighbours(self, label) -> list:
-        return [neighbour.label for neighbour in self.__find_node(label).neighbours]
+        return [[neighbour.label, weight] for neighbour, weight in self.__find_node(label).neighbours.items()]
 
     def DFS(self) -> list:
         visited = []
@@ -31,7 +31,7 @@ class Graph:
 
     def remove_node(self, label):
         node = self.__find_node(label)
-        [prev.neighbours.remove(node) for prev in self.nodes if node in prev.neighbours]
+        [prev.neighbours.pop(node) for prev in self.nodes if node in prev.neighbours]
         self.nodes.remove(node)
 
     def remove_nodes(self, labels: list) -> None:
@@ -41,7 +41,7 @@ class Graph:
         begin_node = self.__find_node(begin)
         end_node = self.__find_node(end)
 
-        begin_node.neighbours.remove(end_node)
+        begin_node.neighbours.pop(end_node)
 
     def remove_connections(self, connections: list) -> None:
         [self.remove_connection(begin, end) for begin, end in connections]
@@ -78,9 +78,7 @@ class Graph:
         begin_node = self.__find_node(begin)
         end_node = self.__find_node(end)
 
-        begin_node.neighbours.append(end_node)
-
-        #TODO - Dodać do grafu obsługę wag - parametr: weight
+        begin_node.neighbours[end_node] = weight
 
     def __find_node(self, label):
         return next(node for node in self.nodes if node.label == label)
