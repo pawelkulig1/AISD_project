@@ -90,6 +90,7 @@ class Graph:
 
     def find_parents(self, node: int) -> list:
         parents = []
+        assert isinstance(node, int)
         _node = self.find_node(node)
         for graph_node in self.nodes:
             #print(_node, graph_node.neighbours.keys())

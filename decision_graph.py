@@ -3,14 +3,14 @@ from channel import Channel
 import random
 
 class DecisionNode(Node):
-    def __init__(self, label: int, channel: Channel, propability: float):
+    def __init__(self, label: int, channel: Channel, propability: float, strategy=None):
         super().__init__(label)
 
         self.channel = channel
         self.check_propability(propability)
         self.propability = propability
         self.tasks = []
-        strategy = None
+        self.strategy = strategy
 
     def check_propability(self, propability):
         assert propability >= 0.01

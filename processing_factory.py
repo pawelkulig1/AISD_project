@@ -4,9 +4,10 @@ from parser import Parser
 from graph import Node
 from processor import Processor
 from decision_graph import DecisionGraph, DecisionNode
-#from task_graph import TaskGraph, TaskNode
-#delete later
 from channel import Channel
+
+import logging
+
 
 
 MAX = 1e10
@@ -55,38 +56,58 @@ class ProcessingFactory:
         self.comms = parser.comms
         self.parser = parser
         self.application = defaultdict(list)
+        self.transfer = [[None for _, _ in enumerate(self.processors)] for _, _ in enumerate(self.processors)]
         self.done_tasks = []
         self.location = []
         self.done_task = []
 
     def apply_random(self) -> None:
         for task in self.task_graph.DFS():
-            self.application[random.choice(self.processors)].append(task)
+            self.application[random.choice(self.processors).index].append(task)
+        
         #now on each node tasks should be sorted finding critical path TODO
+        for proc1, _ in enumerate(self.processors):
+            for proc2, _ in enumerate(self.processors):
+                if proc1 == proc2:
+                    continue
+                self.transfer[proc1][proc2] = random.choice(self.parser.comms).throughput
+        logging.debug(self.transfer)
+
+    def move_task(self, task, where):
+        for key in self.application.keys():
+            if task in self.application[key]:
+                self.application[key].remove(task)
+
+        self.application[where].append(task)
+        #sort by critical path
 
     def apply(self, decision_graph: DecisionGraph) -> None:
         #takes decision graph and applies them to processors
+        self.apply_random()
+        logging.debug("application1:", self.application)
 
         all_tasks = self.task_graph.nodes
         last_node = None
         for n in decision_graph.DFS():
             #pick tasks for nodes keeping in mind propabilities and graph structure
             node = decision_graph.find_node(n)
-            parent = decision_graph.find_parents(node)
-            print(node, parent)
+            parent = decision_graph.find_parents(n)
+            logging.debug(node, parent)
             if parent:
-                parent = parent[0]
+                parent = decision_graph.find_node(parent[0])
                 picked_tasks = random.sample(parent.tasks, k=round(node.propability * len(parent.tasks)))
                 assert len(picked_tasks) <= len(parent.tasks)
             else:
                 picked_tasks = random.sample(all_tasks, k=round(node.propability * len(all_tasks)))
              
             node.tasks = picked_tasks
-            [print(p) for p in picked_tasks]
+            for task in picked_tasks:
+                self.move_task(task.label, node.strategy(task.label))
+        logging.debug("application2:", self.application)
+        return self.simulate()
             
-
     def find_operation_1(self, task):
-        return self.parser.costs.index(min(self.parser.costs[task][:]))
+        return self.parser.costs[task][:].index(min(self.parser.costs[task][:]))
 
     def find_operation_2(self, task):
         return self.parser.times[task][:].index(min(self.parser.times[task][:]))
@@ -131,18 +152,15 @@ class ProcessingFactory:
         time = 0
         cost = 0
         queue = [None for _ in self.processors]
-        done = False
         while len(self.done_tasks) < len(self.task_graph.nodes):
             iteration +=1
 
-            #done = True
             for qi, proc in enumerate(self.processors):
-                if len(self.application[proc]) > 0 and queue[qi] == None:
-                    task = self.application[proc].pop(0)
+                if len(self.application[proc.index]) > 0 and queue[qi] == None:
+                    task = self.application[proc.index].pop(0)
                     queue[qi] = ProcessingFactory.ScheduledTask(self.parser, proc, task)
-                 #   print("queue: ", qi, " -> ", task)
+                    logging.debug("queue: ", qi, " -> ", task)
                     cost += queue[qi].getCost()
-             #       done = False
             
             min_construction_time = min(queue, key=lambda x: x.getTime() if x else MAX).getTime()
             min_time = min_construction_time
@@ -152,16 +170,14 @@ class ProcessingFactory:
                 if not queue_el:
                     continue
                 parents = self.task_graph.find_parents(queue_el.task)
-                #print(queue_el.task, parents)
+                logging.debug(queue_el.task, parents)
                 if not parents:
-                    #queue_el.passTime(min_time)
+                    queue_el.passTime(min_time)
                     queue_el.enabled = True
 
                 #all parents have to be done.
-                #if parents:
-                #    print("intersections:", set(parents), set(self.done_tasks), set(parents).intersection(set(self.done_tasks)))
                 if parents and set(parents).intersection(set(self.done_tasks)) == set(parents) and len(self.done_tasks) > 0:
-               #     print("transfer needed")
+                    logging.debug("transfer needed")
                      
                     transfer_time = 0
                     #resources from all parents have to be on this node
@@ -170,15 +186,14 @@ class ProcessingFactory:
                         ind = self.done_tasks.index(parent)
                         if self.location[ind] != queue_index and ind in self.done_tasks:
                             all_here = False
-                            transfer_time += self.task_graph.get_weight(parent, queue_el.task) / 1 #TODO
-              #              print("transfering:", self.location[ind], ind, " -> ", queue_index, ind)
+                            transfer_time += self.task_graph.get_weight(parent, queue_el.task) / self.transfer[self.location[ind]][queue_index] #TODO
+                            logging.debug("transfering:", self.location[ind], ind, " -> ", queue_index, ind)
                             self.location[ind] = queue_index
-                            #transfer_target = queue_index
                         
                     queue_el.enable(True)
                         
                     if all_here:
-             #           print("all resources in place!")
+                        logging.debug("all resources in place!")
                         queue_el.enable()
                     if queue_el and transfer_time > 0:
                         min_time = transfer_time
@@ -189,10 +204,8 @@ class ProcessingFactory:
                 if queue_el:
                     queue_el.passTime(min_time)
 
-            #if transfer_target != -1:
-            #    queue[transfer_target].enabled = True
             time += min_time
-            #print("TIME:", time, min_time, iteration, self.done_tasks)
+            logging.info("TIME:", time, min_time, iteration, self.done_tasks)
             sums[iteration%len(sums)] = sum([x.getTime() for x in queue if x])#, key=lambda x: x.getTime() if x else 0) 
              
             for i, e in enumerate(queue):
@@ -202,11 +215,9 @@ class ProcessingFactory:
                     self.location.append(i)
                     queue[i] = None
 
-            #print("queue after constructing:", queue) 
-            #print(sums)
+            logging.debug(sums)
             if sum(sums)/len(sums) == sums[-1]:
                 return MAX, MAX
-            #assert iteration < 1000 #safety
         return time, cost
 
 
@@ -215,32 +226,31 @@ if __name__ == "__main__":
     parser.parse()
 
     #random application and simulation
-    pf = ProcessingFactory(parser)
-    pf.apply_random()
-    #print(pf.application)
-    print(pf.simulate())
+    #pf = ProcessingFactory(parser)
+    #pf.apply_random()
+    #print(pf.simulate())
 
     #random application from decision tree:
 
+    #pf = ProcessingFactory(parser)
     #dg = DecisionGraph()
-    #dg.add_node(DecisionNode(0, Channel.instances[0], 1.0))
-    #dg.add_node(DecisionNode(1, Channel.instances[0], 0.3))
-    #dg.add_node(DecisionNode(2, Channel.instances[0], 0.2))
+    #dg.add_node(DecisionNode(0, parser.comms[0], 1.0, pf.find_operation_1))
+    #dg.add_node(DecisionNode(1, parser.comms[0], 0.3, pf.find_operation_2))
+    #dg.add_node(DecisionNode(2, parser.comms[0], 0.2, pf.find_operation_2))
     #dg.add_connection(0, 1, 0)
     #dg.add_connection(1, 2, 0)
 
-    #pf = ProcessingFactory(parser)
-    #pf.apply(dg)
+    #print(pf.apply(dg))
 
-    #dg = DecisionGraph()
-    #dg.add_node(DecisionNode(0, Channel.instances[0], 1.0))
-    #dg.add_node(DecisionNode(1, Channel.instances[0], 0.3))
-    #dg.add_node(DecisionNode(2, Channel.instances[0], 0.2))
-    #dg.add_node(DecisionNode(3, Channel.instances[0], 0.5))
-    #dg.add_connection(0, 1, 0)
-    #dg.add_connection(1, 2, 0)
-    #dg.add_connection(0, 3, 0)
+    dg = DecisionGraph()
+    pf = ProcessingFactory(parser)
+    dg.add_node(DecisionNode(0, parser.comms[0], 1.0, pf.find_operation_3))
+    dg.add_node(DecisionNode(1, parser.comms[0], 0.3, pf.find_operation_3))
+    dg.add_node(DecisionNode(2, parser.comms[0], 0.2, pf.find_operation_3))
+    dg.add_node(DecisionNode(3, parser.comms[0], 0.5, pf.find_operation_3))
+    dg.add_connection(0, 1, 0)
+    dg.add_connection(1, 2, 0)
+    dg.add_connection(0, 3, 0)
 
-    #pf = ProcessingFactory(parser)
-    #pf.apply(dg)
+    print(pf.apply(dg))
         
