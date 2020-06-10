@@ -3,21 +3,23 @@ from channel import Channel
 import random
 
 class DecisionNode(Node):
-    def __init__(self, label: int, channel: Channel, propability: float, strategy=None):
+    def __init__(self, label: int, propability: float, t_strategy=None, c_strategy=None):
         super().__init__(label)
 
-        self.channel = channel
+        # self.channel = channel
         self.check_propability(propability)
         self.propability = propability
         self.tasks = []
-        self.strategy = strategy
+        self.connections = []
+        self.task_strategy = t_strategy
+        self.comm_strategy = c_strategy
 
     def check_propability(self, propability):
         assert propability >= 0.01
         assert propability <= 1.0
 
     def __str__(self):
-        return "DecisionNode:\n label " + str(self.label) +  "\n channel: " +  str(self.channel) + "\n propability: " + str(self.propability)
+        return "DecisionNode:\n label " + str(self.label) + "\n propability: " + str(self.propability)
 
 class DecisionGraph(Graph):
 

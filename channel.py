@@ -26,5 +26,8 @@ class Channel:
     def get_cost(self) -> int:
         return self.cost
 
+    def get_throughput(self) -> int:
+        return self.throughput
+
     def __str__(self):
         return "id: "+str(self.id)+" transmission: "+str(self.transmission)+" cost: "+str(self.cost)+" troughput: "+str(self.throughput)
