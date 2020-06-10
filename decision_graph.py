@@ -1,6 +1,9 @@
 from graph import Graph, Node
 from channel import Channel
+from parser import Parser
+from procedures import Procedures
 import random
+import logging
 
 class DecisionNode(Node):
     def __init__(self, label: int, propability: float, t_strategy=None, c_strategy=None):
@@ -22,46 +25,53 @@ class DecisionNode(Node):
         return "DecisionNode:\n label " + str(self.label) + "\n propability: " + str(self.propability)
 
 class DecisionGraph(Graph):
-
     def __init__(self) -> None:
         super().__init__()
-        self.nodes = []
 
-    def crossover(self, parent_1, parent_2):
-        chromosome_length = len(parent_1)
-        crossover_point = random.randint(1, chromosome_length - 1)
-        child_1 = (parent_1[0:crossover_point], parent_2[crossover_point:])
-        child_2 = (parent_2[0:crossover_point], parent_1[crossover_point:])
-        return child_1, child_2
+    @staticmethod
+    def crossover(self, parent_1: Graph, parent_2: Graph) -> (Graph, Graph):
+        #TODO
+        pass
 
-    def mutate(self, population, mutation_probability):
-        random_mutation_array = random.random(size=(population.shape))
+    @staticmethod
+    def mutate(self, graph) -> Graph:
+        random_node = random.sample(graph.nodes, k=1)
+        random_node.task_strategy = Procedures.instance.get_oper()
+        random_node.comm_strategy = Procedures.instance.get_comm()
+        return graph
 
-        random_mutation_boolean = \
-            random_mutation_array <= mutation_probability
+    @staticmethod
+    def create_random_graph(count):
+        connected = []
+        # temp_nodes = []
+        dg = DecisionGraph()
+        pr = Procedures.instance
 
-        population[random_mutation_boolean] = \
-            (population[random_mutation_boolean])
+        dg.add_node(DecisionNode(0, 1, pr.get_oper(), pr.get_comm()))
+        for i in range(1, count):
+            dg.add_node(DecisionNode(i, (random.random() * 0.9 + 0.1), pr.get_oper(), pr.get_comm()))
 
-        return population
-
-    def create_embrio(self):
-        embrio = random.choice()
-        return embrio
-
-    def create_random_graph(self, n, p, lower_weight, upper_weight):
-        g = graphs.RandomGNP(n, p)
-        m = g.num_edges()
-        weights = [random.randint(lower_weight, upper_weight) for r in range(m)]
-        uw_edges = g.edges()
-        w_edges = [(uw_edges[i][0], uw_edges[i][1], weights[i]) for i in range(m)]
-
-        return Graph(w_edges, weighted=True)
+        dg.add_connection(0, 1, 0)
+        connected.extend([0, 1])
+        for n in dg.nodes:
+            if n.label in connected:
+                continue
+            else:
+                dest = random.sample(connected, k=1)[0]
+                logging.debug(n.label, " -> ", dest)
+                dg.add_connection(n.label, dest, 0)
+                connected.append(n.label)
+        
+        return dg
 
     def add_node(self, node: DecisionNode):
         self.nodes.append(node)
 
 
 if __name__ == "__main__":
-    graph = DecisionGraph()
-    print(graph.create_embrio())
+    o_props = [0.5, 0.2, 0.1, 0.1, 0.1]
+    c_props = [0.5, 0.25, 0.25]
+    Procedures(Parser.instance, o_props, c_props)
+    graph = DecisionGraph.create_random_graph(15)
+    print(len(graph.nodes))
+    

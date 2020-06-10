@@ -5,10 +5,9 @@ from graph import Node
 from processor import Processor
 from decision_graph import DecisionGraph, DecisionNode
 from channel import Channel
+from procedures import Procedures
 import copy
-
 import logging
-
 
 
 MAX = 1e10
@@ -64,7 +63,7 @@ class ProcessingFactory:
         self.done_tasks = []
         self.location = []
         self.done_task = []
-        self.last_operator = self.find_operation_1 #default
+        # self.last_operator = self.find_operation_1 #default
 
     def apply_random(self) -> None:
         for task in self.task_graph.DFS():
@@ -121,64 +120,13 @@ class ProcessingFactory:
 
             for conn in picked_connections:
                 # print("before altering:", conn)
-                picked = node.comm_strategy()
+                picked = node.comm_strategy(self.transfer)
                 conn = self.alter_connection(conn, picked)
                 # print("after altering:", conn)
 
         logging.debug("application2:", self.application)
         logging.debug("connections2:", self.transfer)
         return self.simulate()
-            
-    def find_operation_1(self, task):
-        self.last_operator = self.find_operation_1
-        return self.parser.costs[task][:].index(min(self.parser.costs[task][:]))
-
-    def find_operation_2(self, task):
-        self.last_operator = self.find_operation_2
-        return self.parser.times[task][:].index(min(self.parser.times[task][:]))
-
-    def find_operation_3(self, task):
-        min_val = MAX
-        min_ind = -1
-        for i, p in enumerate(self.processors):
-            val = self.parser.times[task][i] * self.parser.costs[task][i]
-            if val < min_val:
-                min_val = val
-                min_ind = i
-
-        self.last_operator = self.find_operation_3
-        assert min_ind != -1
-        return min_ind
-
-    def find_operation_4(self, task):
-        return self.last_operator(task)
-
-    def find_operation_5(self, task):
-        min_l = MAX
-        min_ind = -1
-        for i, key in enumerate(self.application.keys()):
-            temp = len(self.pallication[key])
-            if temp < min_l:
-                min_l = temp
-                min_ind = i
-
-        self.last_operator = self.find_operation_5
-        assert min_ind != -1
-        return min_ind
-
-    def find_comm_1(self):
-        logging.info("find_commm_1")     
-        return self.parser.comms.index(min(self.parser.comms, key=lambda x: x.get_cost()))
-
-    def find_comm_2(self):
-        logging.info("find_commm_2")
-        return self.parser.comms.index(max(self.parser.comms, key=lambda x: x.get_throughput()))
-    
-    def find_comm_3(self):
-        logging.info("find_commm_3")
-        flat_list = [i for sub in self.transfer for i in sub]
-        r = Counter([x.id for x in flat_list if x]).most_common(1)[0][0]
-        return r
 
     def simulate(self) -> (int, int):
         sums = [0 for i in range(10)]
@@ -254,20 +202,25 @@ class ProcessingFactory:
                 return MAX, MAX
         return time, cost
 
-
 if __name__ == "__main__":
     parser = Parser("grafy/graph_10_2.txt")
     parser.parse()
 
+    o_props = [0.5, 0.2, 0.1, 0.1, 0.1]
+    c_props = [0.5, 0.25, 0.25]
+    Procedures(parser, o_props, c_props)
+
     dg = DecisionGraph()
-    pf = ProcessingFactory(parser)
-    dg.add_node(DecisionNode(0, 1.0, pf.find_operation_3, pf.find_comm_3))
-    dg.add_node(DecisionNode(1, 0.3, pf.find_operation_3, pf.find_comm_3))
-    dg.add_node(DecisionNode(2, 0.2, pf.find_operation_3, pf.find_comm_3))
-    dg.add_node(DecisionNode(3, 0.5, pf.find_operation_3, pf.find_comm_3))
+    pr = Procedures.instance
+    
+    dg.add_node(DecisionNode(0, 1.0, pr.find_operation_3, pr.find_comm_3))
+    dg.add_node(DecisionNode(1, 0.3, pr.find_operation_3, pr.find_comm_3))
+    dg.add_node(DecisionNode(2, 0.2, pr.find_operation_3, pr.find_comm_3))
+    dg.add_node(DecisionNode(3, 0.5, pr.find_operation_3, pr.find_comm_3))
     dg.add_connection(0, 1, 0)
     dg.add_connection(1, 2, 0)
     dg.add_connection(0, 3, 0)
 
+    pf = ProcessingFactory(parser)
     print(pf.apply(dg))
         

@@ -3,6 +3,8 @@ from task_graph import TaskGraph
 from channel import Channel
 
 class Parser:
+    instance = None
+
     def __init__(self, filename: str) -> None:
         """ _filename: str - name of graph file to load
             tasks_count: int - number of tasks (@tasks n)
@@ -23,6 +25,7 @@ class Parser:
         self.comms = []
         self.procs = []
         self.graph = TaskGraph()
+        Parser.instance = self
 
     def parse(self):
         with open(self._filename, "r") as f: #Reading file line by line
