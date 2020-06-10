@@ -1,5 +1,5 @@
 from processor import Processor
-from graph import Graph
+from task_graph import TaskGraph
 from channel import Channel
 
 class Parser:
@@ -22,7 +22,7 @@ class Parser:
         self.costs = []
         self.comms = []
         self.procs = []
-        self.graph = Graph()
+        self.graph = TaskGraph()
 
     def parse(self):
         with open(self._filename, "r") as f: #Reading file line by line
@@ -86,6 +86,7 @@ class Parser:
                     raise ValueError('Wrong data format!')
                 data = f.readline()
             
-
-parser = Parser("grafy/graph_10_2.txt")
-parser.parse()
+if __name__ == "__main__":
+    parser = Parser("grafy/graph_10_2.txt")
+    parser.parse()
+    

@@ -15,6 +15,7 @@ class Simulation:
 
         """
         self.parser = parser
+        self.task_graph = parser.graph
         self.alpha = alpha 
         self.beta = beta
         self.gamma = gamma
@@ -24,8 +25,6 @@ class Simulation:
         self.z = 0
         self.initial_size = 0
         self.max_iters = 1 # TODO - for now
-
-
 
     def run(self) -> None:
         self.create_initial_population()
@@ -47,6 +46,9 @@ class Simulation:
     def apply_mutation(self) -> None:
         # TODO
         pass
+
+    def create_initial_population(self) -> None:
+        
 
     def check_stop_condition(self) -> bool:
         """ if last epsilon epochs without progress returns true else false"""

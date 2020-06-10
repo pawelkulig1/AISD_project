@@ -9,7 +9,7 @@ class Graph:
         self.nodes = []
 
     def find_neighbours(self, label) -> list:
-        return [[neighbour.label, weight] for neighbour, weight in self.__find_node(label).neighbours.items()]
+        return [[neighbour.label, weight] for neighbour, weight in self.find_node(label).neighbours.items()]
 
     def DFS(self) -> list:
         visited = []
@@ -30,7 +30,7 @@ class Graph:
                 self.__DFS(neighbour, visited, result)
 
     def remove_node(self, label):
-        node = self.__find_node(label)
+        node = self.find_node(label)
         [prev.neighbours.pop(node) for prev in self.nodes if node in prev.neighbours]
         self.nodes.remove(node)
 
@@ -38,8 +38,8 @@ class Graph:
         [self.remove_node(label) for label in labels]
 
     def remove_connection(self, begin, end):
-        begin_node = self.__find_node(begin)
-        end_node = self.__find_node(end)
+        begin_node = self.find_node(begin)
+        end_node = self.find_node(end)
 
         begin_node.neighbours.pop(end_node)
 
@@ -69,16 +69,34 @@ class Graph:
         return False
 
     def is_leaf(self, label) -> bool:
-        return len(self.__find_node(label).neighbours) == 0
+        return len(self.find_node(label).neighbours) == 0
 
     def add_node(self, label) -> None:
         self.nodes.append(Node(label))
 
-    def add_connection(self, begin, end, weight) -> None:
-        begin_node = self.__find_node(begin)
-        end_node = self.__find_node(end)
+    def add_connection(self, begin: int, end: int, weight: float) -> None:
+        begin_node = self.find_node(begin)
+        end_node = self.find_node(end)
 
         begin_node.neighbours[end_node] = weight
 
-    def __find_node(self, label):
+    def find_node(self, label):
         return next(node for node in self.nodes if node.label == label)
+
+    def get_weight(self, begin: int, end: int) -> float:
+        begin_node = self.find_node(begin)
+        end_node = self.find_node(end)
+        return begin_node.neighbours[end_node]
+
+    def find_parents(self, node: int) -> list:
+        parents = []
+        _node = self.find_node(node)
+        for graph_node in self.nodes:
+            #print(_node, graph_node.neighbours.keys())
+            if _node in graph_node.neighbours.keys():
+                parents.append(graph_node.label)
+
+        if len(parents) > 0:
+            return parents
+        return None
+
