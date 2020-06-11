@@ -3,12 +3,30 @@ from channel import Channel
 import copy
 import time
 
+
 class Path:
     def __init__(self, begin: Node, end: Node, weight: float):
+        """
+        Path is a class that contains some information
+        about path of the graph.
+
+            Parameters
+            begin: Node
+                starting node
+            end: Node
+                final node
+            weigh
+                weigh of path
+
+            Returns
+            ----------
+             None
+        """
+
         self.begin = begin
         self.end = end
-        self.weight = weight#graph.get_weight_fast(begin, end)
-        
+        self.weight = weight  # graph.get_weight_fast(begin, end)
+
     def getWeight(self):
         return self.weight
 
@@ -24,10 +42,33 @@ class Path:
 class TaskGraph(Graph):
     # CRITICAL_COUNTER = 0
     def __init__(self):
+        """
+        TaskGraph is inherited class from Graph,
+        it contains information about paths of
+        the graph and allows to find critical path.
+
+            Parameters
+            ----------
+
+            Returns
+            ----------
+            None
+        """
         super().__init__()
         self.paths = []
 
     def find_critical_path(self) -> list:
+        """
+            Function that allows to find critical path
+            of the graph.
+
+            Parameters
+            ----------
+
+            Returns
+            ----------
+            None
+        """
         # TaskGraph.CRITICAL_COUNTER += 1
         # start = time.time()
         all_paths = self.find_all_paths()
@@ -35,34 +76,56 @@ class TaskGraph(Graph):
         for path in all_paths:
             if len(path) < 2:
                 continue
-            arr = [Path(path[i], path[i+1], self.get_weight_fast(path[i], path[i+1])) for i in range(len(path) - 1)]
+            arr = [Path(path[i], path[i + 1], self.get_weight_fast(path[i], path[i + 1])) for i in range(len(path) - 1)]
             all_converted.append([arr, self.calculate_cost(arr)])
-        
-        #print(all_converted)
+
+        # print(all_converted)
         critical_path = []
         while len(critical_path) < len(self.nodes) - 1:
             all_converted.sort(key=lambda x: x[1], reverse=True)
-            #print(self.calculate_cost(all_converted[0][0]))
+            # print(self.calculate_cost(all_converted[0][0]))
             critical_route = all_converted[0][0][0]
             critical_path.append(critical_route)
             for p in all_converted:
                 if critical_route in p[0]:
                     p[0].remove(critical_route)
                     p[1] -= critical_route.getWeight()
-                    
+
         # Root always first
         ret = [self.nodes[0].label]
         ret.extend([x.end.label for x in critical_path])
 
         # print("find critical path time: ", TaskGraph.CRITICAL_COUNTER, time.time() - start)
         return ret
-    
+
     def calculate_cost(self, path: list) -> float:
+        """
+            Function that allows to calculate cost of the
+            path of graph.
+
+            Parameters
+            path: list
+
+            Returns
+            sum
+                Sum of weights stored in list.
+            """
         # if len(path) == 0:
         #     return -1
         return sum([p.getWeight() for p in path])
 
     def find_all_paths(self) -> list:
+        """
+            Function that allows to find all
+            the paths of the graph from
+            the starting node.
+
+            Parameters
+            ----------
+
+            Returns
+            self.paths
+        """
         starting_node = self.nodes[0]
         self._find_all_paths(starting_node, [starting_node], [starting_node])
         for i, path in enumerate(self.paths):
@@ -71,6 +134,21 @@ class TaskGraph(Graph):
         return self.paths
 
     def _find_all_paths(self, node, visited=[], path=[]) -> list:
+        """
+            Function that allows to calculate cost of the
+            path of graph.
+
+            Parameters
+                node
+                    Node of the graph.
+                visited
+                    List that contains visited nodes.
+                path
+                    List that contains path of the grap.
+
+            Returns
+            -------
+        """
         found_neighs = node.neighbours.keys()
         for neigh in found_neighs:
             if neigh not in visited:
@@ -82,7 +160,7 @@ class TaskGraph(Graph):
 
                 # Make copy of visited to allow traversing with and without stored visited
                 vis_copy = copy.copy(visited)
-                
+
                 # Recursively call invoke find_all_paths
                 self._find_all_paths(neigh, vis_copy, path_copy)
 
@@ -104,6 +182,6 @@ if __name__ == "__main__":
     tg.add_connection(5, 6, 6)
 
     found_paths = tg.find_all_paths()
-    
+
     critical = tg.find_critical_path()
     [print(n, end=", ") for n in critical]
