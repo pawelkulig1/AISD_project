@@ -6,15 +6,19 @@ class Parser:
     instance = None
 
     def __init__(self, filename: str) -> None:
-        """ _filename: str - name of graph file to load
-            tasks_count: int - number of tasks (@tasks n)
-            proc_count: int - number of processing units (@proc n)
-            comms_count: int - number of channeling units (@comm n)
-            times: [[], [], ..., []] - 2D list with times. For example times[1][3] -> task1 on machine3.
-            costs: [[], [], ..., []] - 2D list with costs. For example costs[1][3] -> task1 on machine3.
-            comms: [] - 1D list containing objects representing connection (Channel)
-            procs: [] - 1D list containing objects representing processors (Processor)
-            graph: Graph - graph object 
+        """ 
+            Parser is a class that provides converting data from text file
+            to structures such as Graph, Channels, Processors, Tables of times and costs
+            and hold them for later use.
+
+            Parameters
+            ----------
+            filename: str
+                Name of graph file to load
+
+            Returns
+            ----------
+            None
         """
         self._filename = filename
         self.tasks_count = 0
@@ -28,6 +32,20 @@ class Parser:
         Parser.instance = self
 
     def parse(self):
+        """ 
+            Parse() is method that initiates processing data from text file
+            to internal structures in Parser object. Parser creates graph - TaskGraph() - with verticies, edges and weights,
+            procs[]- table with Processors, comms[] - table with Channels, times[] - table with times, costs[] - table with costs,
+            counts amounts of:  tasks - tasks_count, processors - proc_count and channels - comms_count. 
+
+            Parameters
+            ----------
+            None
+
+            Returns
+            ----------
+            None
+        """
         with open(self._filename, "r") as f: #Reading file line by line
             data = f.readline()
 

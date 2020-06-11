@@ -11,8 +11,10 @@ class Channel:
             Parameters
             ----------
             line: str
+                Example: "CHAN0 60 18 1 0" creates Channel with
+                Id = 0, Cost = 60, Throughput = 18, Ability to connect Processor 1, Unability to connect Processor 0 
 
-             Returns
+            Returns
             ----------
             None
         """
@@ -30,10 +32,12 @@ class Channel:
 
             Parameters
             ----------
-            line
+            line: str
+                Example: "CHAN0 60 18 1 0" creates Channel with
+                Id = 0, Cost = 60, Throughput = 18, Ability to connect Processor 1, Unability to connect Processor 0 
 
             Returns
-             ----------
+            ----------
             None
         """
         data = self.line.split()
@@ -53,5 +57,16 @@ class Channel:
         return self.throughput
 
     def __str__(self):
+        """
+            Function __str__() provides ability to display Channel object's informations by print() function.
+
+            Parameters
+            ----------
+            None
+
+            Returns
+            ----------
+            Str
+        """
         return "id: " + str(self.id) + " transmission: " + str(self.transmission) + " cost: " + str(
             self.cost) + " troughput: " + str(self.throughput)
