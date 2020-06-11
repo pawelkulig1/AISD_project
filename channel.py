@@ -48,12 +48,45 @@ class Channel:
             self.transmission.append(bool(data))
 
     def can_connect(self, processor: Processor) -> bool:
+        """
+            Function can_connect provides checking if Channel can connect to Processor.
+
+            Parameters
+            ----------
+            processor: Processor
+
+            Returns
+            ----------
+            Bool
+        """
         return self.transmission[processor.id]
 
     def get_cost(self) -> int:
+        """
+            Function get_cost retuns value of cost for Channel object.
+
+            Parameters
+            ----------
+            None
+
+            Returns
+            ----------
+            Int
+        """
         return self.cost
 
     def get_throughput(self) -> int:
+        """
+            Function get_throughput retuns value of troughput for Channel object.
+
+            Parameters
+            ----------
+            None
+
+            Returns
+            ----------
+            Int
+        """
         return self.throughput
 
     def __str__(self):
