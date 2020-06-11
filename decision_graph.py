@@ -8,9 +8,27 @@ import copy
 
 class DecisionNode(Node):
     def __init__(self, label: int, propability: float, t_strategy=None, c_strategy=None):
-        super().__init__(label)
+        """
+            DecisionNode is inherited class from Node, it contains logic required to perform decisions 
+            on picking tasks and communication resources, also stores propability.
 
-        # self.channel = channel
+            Parameters
+            ----------
+            label: int
+                Node label for parent
+            propability: float
+                Number in range [0.1, 1] that represents how many tasks will be affected by that node
+            t_strategy: function reference
+                Reference to function returning where to move task
+            c_strategy: function reference
+                Reference to function returning which comm to pick
+            
+            Returns
+            ----------
+            None
+        """
+
+        super().__init__(label)
         self.check_propability(propability)
         self.propability = propability
         self.tasks = []
@@ -30,8 +48,29 @@ class DecisionGraph(Graph):
         super().__init__()
 
     @staticmethod
-    def crossover(parent_1: Graph, parent_2: Graph) -> (Graph, Graph):
-        offset = 1000 #to avoid label conflict 
+    def crossover(parent_1: DecisionGraph, parent_2: DecisionGraph) -> (DecisionGraph, DecisionGraph):
+        """
+            Static method performing crossover on two graphs and returning two children after that operation
+
+            Parameters
+            ----------
+            parent_1: DecisionGraph
+                First parent to perform crossover on
+            parent_2: DecisionGraph
+                Second parent to perform crossover on
+            
+            Returns
+            ----------
+            DecisionGraph
+                First child
+            DecisionGraph
+                Second child
+        """
+
+        # Adding new nodes to graph could cause labels conflicts. 
+        # To avoid that new nodes are added with labels beginning from offset.
+        # In the end all labels in graphs are reassigned to be in order and again below offset
+        offset = 1000
 
         if len(parent_1.nodes) == 1 or len(parent_2.nodes) == 1:
             return parent_1, parent_2
@@ -55,14 +94,14 @@ class DecisionGraph(Graph):
         g1_children = copy.copy([child_1.find_node(n) for n in g1_children_labels])
         g2_children = copy.copy([child_2.find_node(n) for n in g2_children_labels])
 
-        #remove nodes from source graphs
+        # Remove nodes from source graphs
         child_1.remove_node(point1)
         child_2.remove_node(point2)
 
         child_1.remove_nodes(g1_children_labels)
         child_2.remove_nodes(g2_children_labels)
 
-        #add nodes to destination graphs
+        # Add nodes to destination graphs
         child_1.add_real_node(DecisionNode( point2 + offset, \
                                             point2n.propability, \
                                             point2n.task_strategy, \
@@ -79,7 +118,7 @@ class DecisionGraph(Graph):
         for n in g1_children:
             child_2.add_real_node(DecisionNode(n.label + offset, n.propability, n.task_strategy, n.comm_strategy))
 
-        #add connections from parents to added nodes
+        # Add connections from parents to added nodes
         if g1_parents:
             for p in g1_parents:
                 child_1.add_connection(p, point2 + offset, 0)
@@ -88,14 +127,14 @@ class DecisionGraph(Graph):
             for p in g2_parents:
                 child_2.add_connection(p, point1 + offset, 0)
 
-        #add connections from added node to it's children
+        # Add connections from added node to it's children
         for child in point1n.neighbours.keys():
             child_2.add_connection(point1 + offset, child.label + offset, 0)
 
         for child in point2n.neighbours.keys():
             child_1.add_connection(point2 + offset, child.label + offset, 0)
 
-        #add all connections between added children
+        # Add all connections between added children
         for child in g1_children:
             for neigh in child.neighbours.keys():
                 child_2.add_connection(child.label + offset, neigh.label + offset, 0)
@@ -104,7 +143,7 @@ class DecisionGraph(Graph):
             for neigh in child.neighbours.keys():
                 child_1.add_connection(child.label + offset, neigh.label + offset, 0)
 
-        #recalculate labels
+        # Recalculate labels
         for i, n in enumerate(child_1.nodes):
             n.label = i
 
@@ -114,23 +153,52 @@ class DecisionGraph(Graph):
         return child_1, child_2
 
     @staticmethod
-    def mutate(graph) -> Graph:
+    def mutate(graph: DecisionGraph) -> DecisionGraph:
+        """
+            Static method that mutates graph
+
+            Parameters
+            ----------
+            graph: DecisionGraph
+                Graph to perform mutation on
+
+            Returns
+            ----------
+            DecisionGraph
+                Mutated graph
+        """
         random_node = random.sample(graph.nodes, k=1)[0]
         random_node.task_strategy = Procedures.instance.get_oper()
         random_node.comm_strategy = Procedures.instance.get_comm()
         return graph
 
     @staticmethod
-    def create_random_graph(count):
+    def create_random_graph(count: int) -> DecisionGraph:
+        """
+            Static method that creates random graph with no dangling nodes.
+
+            Parameters
+            ----------
+            count: int
+                Number of nodes that graph will have
+
+            Returns
+            ----------
+            DecisionGraph
+                Randomly generated graph with no dangling nodes
+        """
         connected = []
-        # temp_nodes = []
         dg = DecisionGraph()
         pr = Procedures.instance
 
+        # Add root node with propability 1
         dg.add_real_node(DecisionNode(0, 1, pr.get_oper(), pr.get_comm()))
+
+        # Add count - 1 nodes (root already added)
         for i in range(1, count):
             dg.add_real_node(DecisionNode(i, (random.random() * 0.9 + 0.1), pr.get_oper(), pr.get_comm()))
 
+        # Connect nodes avoiding dangling nodes
         if count > 1:
             dg.add_connection(0, 1, 0)
             connected.extend([0, 1])

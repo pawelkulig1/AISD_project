@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>processing_factory.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>processing_factory.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">Counter</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">parser</span> <span class="kn">import</span> <span class="n">Parser</span>
+<span class="kn">from</span> <span class="nn">graph</span> <span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span> <span class="nn">processor</span> <span class="kn">import</span> <span class="n">Processor</span>
+<span class="kn">from</span> <span class="nn">decision_graph</span> <span class="kn">import</span> <span class="n">DecisionGraph</span><span class="p">,</span> <span class="n">DecisionNode</span>
+<span class="kn">from</span> <span class="nn">channel</span> <span class="kn">import</span> <span class="n">Channel</span>
+<span class="kn">from</span> <span class="nn">procedures</span> <span class="kn">import</span> <span class="n">Procedures</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+
+<span class="n">MAX</span> <span class="o">=</span> <span class="mf">1e10</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">ProcessingFactory</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">class</span> <span class="nc">ScheduledTask</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>SheduledTask is helper class to keep information about task in queue.</p>
+<h2>Parameters</h2>
+<p>parser: Parser
+    Input graph data parser
+processor: Processor
+    Processor which will execute task
+task: Node
+    Node from graph that this class will be representing</p>
+<h2>Returns</h2>
+<p>None</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">Parser</span><span class="p">,</span> <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">processor</span> <span class="o">=</span> <span class="n">processor</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_time</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calculate</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delayed</span> <span class="o">=</span> <span class="kc">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Initializes values: time and cost from parser.</p>
+<h2>Parameters</h2>
+<p>None</p>
+<h2>Returns</h2>
+<p>None</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="bp">self</span><span class="o">.</span><span class="n">default_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">costs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">index</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">getTime</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">getDefaultTime</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_time</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">getCost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Function to pass time in object (to construct it). 
+If delayed set to true do not pass time but change internal state to pass in next run.
+If task is disabled (cannot be built) time won&rsquo;t pass.</p>
+<h2>Parameters</h2>
+<p>time: int
+    Amount of time to pass</p>
+<h2>Returns</h2>
+<p>None</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">passTime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delayed</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delayed</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">-=</span> <span class="n">time</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Function to enable task in queue to allow it&rsquo;s construction (time passing).
+Parameters</p>
+<hr />
+<p>delay: bool
+    Flag if delay will be performed</p>
+<h2>Returns</h2>
+<p>None</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">def</span> <span class="nf">enable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delayed</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delayed</span> <span class="o">=</span> <span class="n">delay</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">Parser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">graph</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processors</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">procs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">comms</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">comms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="o">=</span> <span class="p">[[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">done_task</span> <span class="o">=</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <pre><code>Creates initial task application to nodes (embrio), it is done randomly but with DFS search 
+to minimize chance of getting impossible graphs
+
+Parameters
+----------
+None
+
+Returns
+----------
+None
+</code></pre>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">apply_random</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span><span class="o">.</span><span class="n">DFS</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>Now on each node tasks should be sorted finding critical path TODO</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">proc1</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">proc2</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">proc1</span> <span class="o">==</span> <span class="n">proc2</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">[</span><span class="n">proc1</span><span class="p">][</span><span class="n">proc2</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">comms</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <pre><code>Moves task from one processor to another
+
+Parameters
+----------
+task: int
+    Task label to move
+where: int
+    index of processor where to move task
+
+Returns
+----------
+None
+</code></pre>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">move_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">where</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">where</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>sort by critical path TODO</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <pre><code>Changes connection between processors
+
+Parameters
+----------
+conn: int
+    Task to move
+new_conn: int
+    new connection index in comms in parser
+
+Returns
+----------
+None
+</code></pre>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">alter_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">new_conn</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">conn</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">comms</span><span class="p">[</span><span class="n">new_conn</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">conn</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <pre><code>Applies graph to random task application, performs all required tasks 
+alterings according to graph structure and strategies in nodes
+
+Parameters
+----------
+decision_graph: DecisionGraph
+    Graph with altering structure
+
+Returns
+----------
+None
+</code></pre>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decision_graph</span><span class="p">:</span> <span class="n">DecisionGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>takes decision graph and applies them to processors</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">apply_random</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;application1:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;connections1:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">)</span>
+
+        <span class="n">Procedures</span><span class="o">.</span><span class="n">instance</span><span class="o">.</span><span class="n">set_application</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">)</span>
+
+        <span class="n">all_tasks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span><span class="o">.</span><span class="n">nodes</span>
+        <span class="n">all_connections</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sub</span> <span class="k">if</span> <span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">decision_graph</span><span class="o">.</span><span class="n">DFS</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>pick tasks for nodes keeping in mind propabilities and graph structure</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="n">node</span> <span class="o">=</span> <span class="n">decision_graph</span><span class="o">.</span><span class="n">find_node</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">parent</span> <span class="o">=</span> <span class="n">decision_graph</span><span class="o">.</span><span class="n">find_parents</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">parent</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>If node has parent use it&rsquo;s tasks to pick from</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="n">parent</span> <span class="o">=</span> <span class="n">decision_graph</span><span class="o">.</span><span class="n">find_node</span><span class="p">(</span><span class="n">parent</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">picked_tasks</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">propability</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">tasks</span><span class="p">)))</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">picked_tasks</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>
+                <span class="n">picked_connections</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">connections</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">propability</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">connections</span><span class="p">)))</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">picked_connections</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">connections</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>If node has no parents pick random elements from all tasks according to propability value</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="n">picked_tasks</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">all_tasks</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">propability</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_tasks</span><span class="p">)))</span>
+                <span class="n">picked_connections</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">all_connections</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">propability</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_connections</span><span class="p">)))</span>
+
+            <span class="n">node</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="n">picked_tasks</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">connections</span> <span class="o">=</span> <span class="n">picked_connections</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>pick tasks according to operation (strategy) in this node</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">picked_tasks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">move_task</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">task_strategy</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">label</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>pick connection according to comm (strategy) in this node</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">picked_connections</span><span class="p">:</span>
+                <span class="n">picked</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">comm_strategy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">)</span>
+                <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alter_connection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">picked</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;application2:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;connections2:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>run simulation on applied node</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      <pre><code>Main function performing simulation, responsible for calculating time and cost for specific graph,
+including parallel execution and transmission times with transmission requirements.
+
+Parameters
+----------
+None
+
+Returns
+----------
+(int, int)
+    Tuple consisting of time and cost
+</code></pre>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">sums</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+        <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="mi">0</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-34'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-34'>#</a>
+      </div>
+      <p>initialize queues list</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">queue</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">):</span>
+            <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-35'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-35'>#</a>
+      </div>
+      <p>apply tasks to queues (processors)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">for</span> <span class="n">qi</span><span class="p">,</span> <span class="n">proc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">processors</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">proc</span><span class="o">.</span><span class="n">index</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">queue</span><span class="p">[</span><span class="n">qi</span><span class="p">]</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">[</span><span class="n">proc</span><span class="o">.</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">queue</span><span class="p">[</span><span class="n">qi</span><span class="p">]</span> <span class="o">=</span> <span class="n">ProcessingFactory</span><span class="o">.</span><span class="n">ScheduledTask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="n">proc</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;queue: &quot;</span><span class="p">,</span> <span class="n">qi</span><span class="p">,</span> <span class="s2">&quot; -&gt; &quot;</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+                    <span class="n">cost</span> <span class="o">+=</span> <span class="n">queue</span><span class="p">[</span><span class="n">qi</span><span class="p">]</span><span class="o">.</span><span class="n">getCost</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-36'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-36'>#</a>
+      </div>
+      <p>calculates min time after which something will happen to move clock</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="n">min_construction_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">getTime</span><span class="p">()</span> <span class="k">if</span> <span class="n">x</span> <span class="k">else</span> <span class="n">MAX</span><span class="p">)</span><span class="o">.</span><span class="n">getTime</span><span class="p">()</span>
+            <span class="n">min_time</span> <span class="o">=</span> <span class="n">min_construction_time</span>
+
+            <span class="k">for</span> <span class="n">queue_index</span><span class="p">,</span> <span class="n">queue_el</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      <p>if queue empty, not interesting</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="k">if</span> <span class="ow">not</span> <span class="n">queue_el</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">parents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span><span class="o">.</span><span class="n">find_parents</span><span class="p">(</span><span class="n">queue_el</span><span class="o">.</span><span class="n">task</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">queue_el</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="n">parents</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      <p>if node has no parents, can be built</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="k">if</span> <span class="ow">not</span> <span class="n">parents</span><span class="p">:</span>
+                    <span class="n">queue_el</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
+                    <span class="n">queue_el</span><span class="o">.</span><span class="n">passTime</span><span class="p">(</span><span class="n">min_time</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      <p>all parents have to be constructed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="k">if</span> <span class="n">parents</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">parents</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="p">))</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">parents</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;transfer needed&quot;</span><span class="p">)</span>
+                     
+                    <span class="n">transfer_time</span> <span class="o">=</span> <span class="mi">0</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      <p>Resources from all parents have to be on this node to start construction.
+Performs transfer logic with additional time required for that.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="n">all_here</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">parents</span><span class="p">:</span>
+                        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">!=</span> <span class="n">queue_index</span> <span class="ow">and</span> <span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="p">:</span>
+                            <span class="n">all_here</span> <span class="o">=</span> <span class="kc">False</span>
+                            <span class="n">transfer_time</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_graph</span><span class="o">.</span><span class="n">get_weight</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">queue_el</span><span class="o">.</span><span class="n">task</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[</span><span class="n">ind</span><span class="p">]][</span><span class="n">queue_index</span><span class="p">]</span><span class="o">.</span><span class="n">throughput</span>
+                            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;transfering:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">ind</span><span class="p">,</span> <span class="s2">&quot; -&gt; &quot;</span><span class="p">,</span> <span class="n">queue_index</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">queue_index</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      <p>If item can be bult enables it in queue with one step delay (to avoid passing time of transmission)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="n">queue_el</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>If all items are already waiting on current node, construction can be started</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="k">if</span> <span class="n">all_here</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;all resources in place!&quot;</span><span class="p">)</span>
+                        <span class="n">queue_el</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      <p>If there was transfer move time according to time required by transfer, else
+move time according to minimal construction time</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="k">if</span> <span class="n">queue_el</span> <span class="ow">and</span> <span class="n">transfer_time</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">min_time</span> <span class="o">=</span> <span class="n">transfer_time</span>
+                    <span class="k">elif</span> <span class="n">queue_el</span><span class="p">:</span>
+                        <span class="n">min_time</span> <span class="o">=</span> <span class="n">min_construction_time</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-44'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-44'>#</a>
+      </div>
+      <p>Pass time for each element in queue</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">for</span> <span class="n">queue_el</span> <span class="ow">in</span> <span class="n">queue</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">queue_el</span><span class="p">:</span>
+                    <span class="n">queue_el</span><span class="o">.</span><span class="n">passTime</span><span class="p">(</span><span class="n">min_time</span><span class="p">)</span>
+
+            <span class="n">time</span> <span class="o">+=</span> <span class="n">min_time</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TIME:&quot;</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">min_time</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-45'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-45'>#</a>
+      </div>
+      <p>Memory of left times in round buffer to avoid looping for infinity for impossible graphs</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="n">sums</span><span class="p">[</span><span class="n">iteration</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">sums</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">getTime</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">queue</span> <span class="k">if</span> <span class="n">x</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-46'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-46'>#</a>
+      </div>
+      <p>If construction time has passed, item is constructed</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">queue</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">queue</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">queue</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">getTime</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-47'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-47'>#</a>
+      </div>
+      <p>Done has task which were finished, location has nodes on which resources are currently stored</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="bp">self</span><span class="o">.</span><span class="n">done_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">queue</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="n">queue</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-48'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-48'>#</a>
+      </div>
+      <p>Checks if all average value of sums is equal to last element, 
+if yes output MAX, MAX which means that it cannot be performed in finite time.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">sums</span><span class="p">)</span> <span class="o">==</span> <span class="n">sums</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">MAX</span><span class="p">,</span> <span class="n">MAX</span>
+        <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">cost</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">Parser</span><span class="p">(</span><span class="s2">&quot;grafy/graph_10_2.txt&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+
+    <span class="n">o_props</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+    <span class="n">c_props</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span>
+    <span class="n">Procedures</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">o_props</span><span class="p">,</span> <span class="n">c_props</span><span class="p">)</span>
+
+    <span class="n">dg</span> <span class="o">=</span> <span class="n">DecisionGraph</span><span class="p">()</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">Procedures</span><span class="o">.</span><span class="n">instance</span>
+
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_real_node</span><span class="p">(</span><span class="n">DecisionNode</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_operation_3</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_comm_3</span><span class="p">))</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_real_node</span><span class="p">(</span><span class="n">DecisionNode</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_operation_3</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_comm_3</span><span class="p">))</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_real_node</span><span class="p">(</span><span class="n">DecisionNode</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_operation_3</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_comm_3</span><span class="p">))</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_real_node</span><span class="p">(</span><span class="n">DecisionNode</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_operation_3</span><span class="p">,</span> <span class="n">pr</span><span class="o">.</span><span class="n">find_comm_3</span><span class="p">))</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">dg</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">pf</span> <span class="o">=</span> <span class="n">ProcessingFactory</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">pf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">dg</span><span class="p">))</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
