@@ -38,11 +38,11 @@ class ProcessingFactory:
             return self.cost
 
         def passTime(self, time: int) -> int:
-            if self.delayed:
+            if self.delayed == True:
                 self.delayed = None
                 return
 
-            if self.enabled:
+            if self.enabled == True:
                 self.time -= time
 
         def enable(self, delay=False):
@@ -95,7 +95,7 @@ class ProcessingFactory:
         # print(self.simulate())
         logging.debug("application1:", self.application)
         logging.debug("connections1:", self.transfer)
-        
+
         Procedures.instance.set_application(self.application)
 
         all_tasks = self.task_graph.nodes
@@ -148,7 +148,6 @@ class ProcessingFactory:
             
             min_construction_time = min(queue, key=lambda x: x.getTime() if x else MAX).getTime()
             min_time = min_construction_time
-            transfer_target = -1
 
             for queue_index, queue_el in enumerate(queue):
                 if not queue_el:
@@ -156,8 +155,9 @@ class ProcessingFactory:
                 parents = self.task_graph.find_parents(queue_el.task)
                 logging.debug(queue_el.task, parents)
                 if not parents:
+                    queue_el.enable()
                     queue_el.passTime(min_time)
-                    queue_el.enabled = True
+                    
 
                 #all parents have to be done.
                 if parents and set(parents).intersection(set(self.done_tasks)) == set(parents) and len(self.done_tasks) > 0:

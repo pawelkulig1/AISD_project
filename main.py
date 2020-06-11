@@ -3,6 +3,7 @@ from decision_graph import DecisionGraph
 from procedures import Procedures
 from processing_factory import ProcessingFactory
 import random
+import time
 
 class Simulation:
     def __init__(self, parser: Parser,  \
@@ -41,19 +42,21 @@ class Simulation:
         self.initial_size = self.alpha * self.n * self.z
         self.max_iters = 100 # TODO - for now
 
+        self.scores = []
+        self.best_ones = []
+
     def run(self) -> None:
         self.create_initial_population()
         print(self.population[0])
         for i in range(self.max_iters):
-            # print("test123")
-            if self.check_stop_condition == True:
+            start = time.time()
+            if self.check_stop_condition():
                 break
-            # print("test1234")
-            # self.sort_population()
+            self.apply_selection()            
             self.apply_crossover()
             self.apply_mutation()
             self.recalculate_population_fitness()
-            print("iteration:", i, self.population[0])
+            print("iteration:", i, self.population[0], time.time() - start, len(self.population))
 
     def recalculate_population_fitness(self):
         self.population = []
@@ -61,14 +64,18 @@ class Simulation:
             sim = ProcessingFactory(self.parser)
             time, cost = sim.apply(graph)
             self.population.append([graph, 1.0 / (self.t * time + self.c * cost)])
+        self.new_population = []
         self.population.sort(key=lambda x: x[1], reverse=True)
+        self.best_ones.append(max([self.best_ones[-1], self.population[0]], key=lambda x: x[1]))
+        self.scores.append(self.population[0][1])
 
     def pick_from_roulette_wheel(self, k=1) -> list:
         return random.choices(self.population, [x[1] for x in self.population], k=k)
 
     def apply_selection(self) -> None:
         outcome_size = int(round(self.initial_size * self.beta))
-        self.new_population.extend(self.pick_from_roulette_wheel(outcome_size))
+        selected = self.pick_from_roulette_wheel(outcome_size)
+        self.new_population.extend([s[0] for s in selected])
 
     def apply_crossover(self) -> None:
         outcome_size = int(round(self.initial_size * self.gamma / 2))
@@ -94,10 +101,13 @@ class Simulation:
 
             self.population.append([graph, 1.0 / (self.t * time + self.c * cost)])
         self.population.sort(key=lambda x: x[1], reverse=True)
+        self.scores.append(self.population[0][1])
+        self.best_ones.append(self.population[0])
 
     def check_stop_condition(self) -> bool:
         """ if last epsilon epochs without progress returns true else false"""
-        # TODO
+        if len(self.best_ones) > self.epsilon and self.best_ones[-self.epsilon][1] == self.best_ones[-1][1]:
+            return True
         return False 
 
 def main() -> None:
