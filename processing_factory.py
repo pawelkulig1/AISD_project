@@ -15,7 +15,8 @@ class ProcessingFactory:
     class ScheduledTask:
         def __init__(self, parser: Parser, processor: Processor, task: Node) -> None:
             """
-            SheduledTask is helper class to keep information about task in queue.
+            SheduledTask is helper class to keep information 
+            about task in queue.
 
             Parameters
             ----------
@@ -67,7 +68,8 @@ class ProcessingFactory:
         def passTime(self, time: int) -> None:
             """
             Function to pass time in object (to construct it). 
-            If delayed set to true do not pass time but change internal state to pass in next run.
+            If delayed set to true do not pass time 
+            but change internal state to pass in next run.
             If task is disabled (cannot be built) time won't pass.
 
             Parameters
@@ -88,7 +90,8 @@ class ProcessingFactory:
 
         def enable(self, delay=False) -> None:
             """
-            Function to enable task in queue to allow it's construction (time passing).
+            Function to enable task in queue to 
+            allow it's construction (time passing).
             Parameters
             ----------
             delay: bool
@@ -116,10 +119,12 @@ class ProcessingFactory:
         self.location = []
         self.done_task = []
 
-    def apply_random(self) -> None:
+    def apply_random(self, critical=True) -> None:
         """
-            Creates initial task application to nodes (embrio), it is done randomly but with DFS search 
-            to minimize chance of getting impossible graphs
+            Creates initial task application to 
+            nodes (embrio), it is done randomly
+            but with DFS search to minimize chance 
+            of getting impossible graphs
 
             Parameters
             ----------
@@ -129,10 +134,14 @@ class ProcessingFactory:
             ----------
             None
         """
-        for task in self.task_graph.DFS():
+        task_order = None
+        if critical == True:
+            task_order = self.task_graph.find_critical_path()
+        else:
+            task_order = self.task_graph.DFS()
+        for task in task_order:
             self.application[random.choice(self.processors).index].append(task)
         
-        #Now on each node tasks should be sorted finding critical path TODO
         for proc1, _ in enumerate(self.processors):
             for proc2, _ in enumerate(self.processors):
                 if proc1 == proc2:
@@ -160,7 +169,17 @@ class ProcessingFactory:
                 self.application[key].remove(task)
 
         self.application[where].append(task)
-        #sort by critical path TODO
+
+
+    def sort_tasks_with_critical_order(self):
+        critical_path = self.task_graph.find_critical_path()
+        new_application = defaultdict(list)
+        for task in critical_path:
+            for key in self.application.keys():
+                if task in self.application[key]:
+                    new_application[key].append(task)
+        
+        self.application = new_application
 
     def alter_connection(self, conn, new_conn):
         """
@@ -182,8 +201,10 @@ class ProcessingFactory:
 
     def apply(self, decision_graph: DecisionGraph) -> None:
         """
-            Applies graph to random task application, performs all required tasks 
-            alterings according to graph structure and strategies in nodes
+            Applies graph to random task application, 
+            performs all required tasks alterings 
+            according to graph structure and 
+            strategies in nodes
 
             Parameters
             ----------
@@ -195,7 +216,7 @@ class ProcessingFactory:
             None
         """
         #takes decision graph and applies them to processors
-        self.apply_random()
+        self.apply_random(False)
         logging.debug("application1:", self.application)
         logging.debug("connections1:", self.transfer)
 
@@ -235,13 +256,17 @@ class ProcessingFactory:
 
         logging.debug("application2:", self.application)
         logging.debug("connections2:", self.transfer)
-        #run simulation on applied node
+
+        self.sort_tasks_with_critical_order()
         return self.simulate()
 
     def simulate(self) -> (int, int):
         """
-            Main function performing simulation, responsible for calculating time and cost for specific graph,
-            including parallel execution and transmission times with transmission requirements. 
+            Main function performing simulation, 
+            responsible for calculating time and cost 
+            for specific graph, including parallel 
+            execution and transmission times 
+            with transmission requirements. 
 
             Parameters
             ----------

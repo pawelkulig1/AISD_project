@@ -60,14 +60,16 @@ class Simulation:
         self.n = len(self.task_graph.nodes)
         self.z = len(self.parser.procs)
         self.initial_size = self.alpha * self.n * self.z
-        self.max_iters = 100
+        self.max_iters = 10
+        self.time_limit = 300000
 
         self.scores = []
         self.best_ones = []
 
     def run(self) -> None:
         """
-            Runs genetic optimization of factory process, performs:
+            Runs genetic optimization of factory process, 
+            performs:
             - crating initial population
             - selection
             - crossover
@@ -83,11 +85,16 @@ class Simulation:
             None
 
         """
+        start_time = time.time()
         self.create_initial_population()
         print(self.population[0])
         for i in range(self.max_iters):
             start = time.time()
+            if start_time + self.time_limit <= start:
+                print("TIME LIMIT EXCEEDED!")
+                break
             if self.check_stop_condition():
+                print("STOP CONDITION MET!")
                 break
             self.apply_selection()            
             self.apply_crossover()
@@ -97,7 +104,8 @@ class Simulation:
 
     def recalculate_population_fitness(self):
         """
-            For each element in new_population calculates fitness and sets it as current population,
+            For each element in new_population calculates 
+            fitness and sets it as current population,
             then performs sorting by score metric.
 
             Parameters
@@ -120,7 +128,8 @@ class Simulation:
 
     def pick_from_roulette_wheel(self, k=1) -> list:
         """
-            Function to pick from roulette wheel according to propability (fitness)
+            Function to pick from roulette wheel 
+            according to propability (fitness)
 
             Parameters
             ----------
@@ -136,7 +145,8 @@ class Simulation:
 
     def apply_selection(self) -> None:
         """
-            Applies selection operator on population using roulette wheel and adds outcome to new_population
+            Applies selection operator on population 
+            using roulette wheel and adds outcome to new_population
 
             Parameters
             ----------
@@ -152,7 +162,8 @@ class Simulation:
 
     def apply_crossover(self) -> None:
         """
-            Applies crossover operator on population using roulette wheel and adds outcome to new_population
+            Applies crossover operator on population 
+            using roulette wheel and adds outcome to new_population
 
             Parameters
             ----------
@@ -171,7 +182,8 @@ class Simulation:
 
     def apply_mutation(self) -> None:
         """
-            Applies mutation operator on population using roulette wheel and adds outcome to new_population
+            Applies mutation operator on population using 
+            roulette wheel and adds outcome to new_population
 
             Parameters
             ----------
@@ -213,7 +225,8 @@ class Simulation:
 
     def check_stop_condition(self) -> bool:
         """
-            Checks stop condition, if last self.epsilon epochs without progress returns True
+            Checks stop condition, if last self.epsilon 
+            epochs without progress returns True
 
             Parameters
             ----------
@@ -230,14 +243,14 @@ class Simulation:
         return False 
 
 def main() -> None:
-    parser = Parser("grafy/GRAF.30.txt")
+    parser = Parser("grafy/graph_10_2.txt")
     parser.parse()
     
     o_props = [0.5, 0.2, 0.1, 0.1, 0.1]
     c_props = [0.5, 0.25, 0.25]
     Procedures(Parser.instance, o_props, c_props)
 
-    s = Simulation(parser, alpha=20, beta=0.4, gamma=0.3, delta=0.3, epsilon=15, c=1.0, t=1.0)
+    s = Simulation(parser, alpha=10, beta=0.4, gamma=0.3, delta=0.3, epsilon=15, c=1.0, t=1.0)
     s.run()
 
 if __name__ == "__main__":

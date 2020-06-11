@@ -71,6 +71,9 @@ class Graph:
     def is_leaf(self, label) -> bool:
         return len(self.find_node(label).neighbours) == 0
 
+    def is_leaf_fast(self, node: Node) -> bool:
+        return len(node.neighbours) == 0
+        
     def add_node(self, label) -> None:
         self.nodes.append(Node(label))
 
@@ -87,6 +90,9 @@ class Graph:
         begin_node = self.find_node(begin)
         end_node = self.find_node(end)
         return begin_node.neighbours[end_node]
+
+    def get_weight_fast(self, begin: Node, end: Node):
+        return begin.neighbours[end]
 
     def find_parents(self, node: int) -> list:
         parents = []

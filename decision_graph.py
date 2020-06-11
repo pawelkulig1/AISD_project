@@ -9,15 +9,18 @@ import copy
 class DecisionNode(Node):
     def __init__(self, label: int, propability: float, t_strategy=None, c_strategy=None):
         """
-            DecisionNode is inherited class from Node, it contains logic required to perform decisions 
-            on picking tasks and communication resources, also stores propability.
+            DecisionNode is inherited class from Node, 
+            it contains logic required to perform decisions 
+            on picking tasks and communication resources, 
+            also stores propability.
 
             Parameters
             ----------
             label: int
                 Node label for parent
             propability: float
-                Number in range [0.1, 1] that represents how many tasks will be affected by that node
+                Number in range [0.1, 1] that represents how 
+                many tasks will be affected by that node
             t_strategy: function reference
                 Reference to function returning where to move task
             c_strategy: function reference
@@ -48,9 +51,11 @@ class DecisionGraph(Graph):
         super().__init__()
 
     @staticmethod
-    def crossover(parent_1: DecisionGraph, parent_2: DecisionGraph) -> (DecisionGraph, DecisionGraph):
+    def crossover(parent_1: Graph, parent_2: Graph) -> (Graph, Graph):
         """
-            Static method performing crossover on two graphs and returning two children after that operation
+            Static method performing crossover on two 
+            graphs and returning two children after that 
+            operation
 
             Parameters
             ----------
@@ -153,7 +158,7 @@ class DecisionGraph(Graph):
         return child_1, child_2
 
     @staticmethod
-    def mutate(graph: DecisionGraph) -> DecisionGraph:
+    def mutate(graph: Graph) -> Graph:
         """
             Static method that mutates graph
 
@@ -173,9 +178,10 @@ class DecisionGraph(Graph):
         return graph
 
     @staticmethod
-    def create_random_graph(count: int) -> DecisionGraph:
+    def create_random_graph(count: int) -> Graph:
         """
-            Static method that creates random graph with no dangling nodes.
+            Static method that creates random graph with 
+            no dangling nodes.
 
             Parameters
             ----------
@@ -185,7 +191,8 @@ class DecisionGraph(Graph):
             Returns
             ----------
             DecisionGraph
-                Randomly generated graph with no dangling nodes
+                Randomly generated graph with no 
+                dangling nodes
         """
         connected = []
         dg = DecisionGraph()
