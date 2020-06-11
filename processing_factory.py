@@ -95,6 +95,8 @@ class ProcessingFactory:
         # print(self.simulate())
         logging.debug("application1:", self.application)
         logging.debug("connections1:", self.transfer)
+        
+        Procedures.instance.set_application(self.application)
 
         all_tasks = self.task_graph.nodes
         all_connections = [i for sub in self.transfer for i in sub if i]

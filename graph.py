@@ -108,8 +108,11 @@ class Graph:
     
     def _get_all_children(self, node: Node, children = []) -> list:
         for neigh in node.neighbours.keys():
-            children.append(neigh.label)
-            self._get_all_children(neigh, children)
+            if neigh.label not in children:
+                children.append(neigh.label)
+                self._get_all_children(neigh, children)
+            else:
+                return
 
     def __str__(self):
         out = ""

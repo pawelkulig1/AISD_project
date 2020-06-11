@@ -7,7 +7,7 @@ MAX = 1e10
 
 class Procedures:
     instance = None #singleton - sort of
-    
+
     def __init__(self, parser: Parser, oper_props: list, comm_props: list) -> None:
         self.last_operator = self.find_operation_1
         self.parser = parser
@@ -21,6 +21,8 @@ class Procedures:
         self.check_prop(self.oper_props)
         self.check_prop(self.comm_props)
 
+        self.application = None
+
         Procedures.instance = self
     
     def check_prop(self, prop):
@@ -32,10 +34,13 @@ class Procedures:
             self.find_operation_2, \
             self.find_operation_3, \
             self.find_operation_4, \
-            self.find_operation_5], self.oper_props, k=1)
+            self.find_operation_5], self.oper_props, k=1)[0]
 
     def get_comm(self):
-        random.choices([self.find_comm_1, self.find_comm_2, self.find_comm_3], self.comm_props, k=1)
+        return random.choices([self.find_comm_1, self.find_comm_2, self.find_comm_3], self.comm_props, k=1)[0]
+
+    def set_application(self, application) -> None:
+        self.application = application
 
     def find_operation_1(self, task):
             self.last_operator = self.find_operation_1
@@ -65,7 +70,7 @@ class Procedures:
         min_l = MAX
         min_ind = -1
         for i, key in enumerate(self.application.keys()):
-            temp = len(self.pallication[key])
+            temp = len(self.application[key])
             if temp < min_l:
                 min_l = temp
                 min_ind = i

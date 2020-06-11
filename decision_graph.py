@@ -32,65 +32,86 @@ class DecisionGraph(Graph):
     @staticmethod
     def crossover(parent_1: Graph, parent_2: Graph) -> (Graph, Graph):
         offset = 1000 #to avoid label conflict 
-        point1n = random.sample(parent_1.nodes[1:], k=1)[0] #ommit root
-        point2n = random.sample(parent_2.nodes[1:], k=1)[0]
+
+        if len(parent_1.nodes) == 1 or len(parent_2.nodes) == 1:
+            return parent_1, parent_2
+
+        child_1 = copy.deepcopy(parent_1)
+        child_2 = copy.deepcopy(parent_2)
+        point1n = random.sample(child_1.nodes[1:], k=1)[0]
+        point2n = random.sample(child_2.nodes[1:], k=1)[0]
 
         point1 = point1n.label
         point2 = point2n.label
 
         logging.debug("points: ", point1, point2)
 
-        g1_parents = parent_1.find_parents(point1)
-        g2_parents = parent_2.find_parents(point2)
+        g1_parents = child_1.find_parents(point1)
+        g2_parents = child_2.find_parents(point2)
 
-        g1_children_labels = parent_1.get_all_children(point1)
-        g2_children_labels = parent_2.get_all_children(point2)
+        g1_children_labels = child_1.get_all_children(point1)
+        g2_children_labels = child_2.get_all_children(point2)
 
-        g1_children = copy.copy([parent_1.find_node(n) for n in g1_children_labels])
-        g2_children = copy.copy([parent_2.find_node(n) for n in g2_children_labels])
+        g1_children = copy.copy([child_1.find_node(n) for n in g1_children_labels])
+        g2_children = copy.copy([child_2.find_node(n) for n in g2_children_labels])
 
         #remove nodes from source graphs
-        parent_1.remove_node(point1)
-        parent_2.remove_node(point2)
+        child_1.remove_node(point1)
+        child_2.remove_node(point2)
 
-        parent_1.remove_nodes(g1_children_labels)
-        parent_2.remove_nodes(g2_children_labels)
+        child_1.remove_nodes(g1_children_labels)
+        child_2.remove_nodes(g2_children_labels)
 
         #add nodes to destination graphs
-        parent_1.add_node(point2 + offset)
-        parent_2.add_node(point1 + offset)
+        child_1.add_real_node(DecisionNode( point2 + offset, \
+                                            point2n.propability, \
+                                            point2n.task_strategy, \
+                                            point2n.comm_strategy))
 
-        for n in g2_children_labels:
-            parent_1.add_node(n + offset)
+        child_2.add_real_node(DecisionNode(  point1 + offset, \
+                                        point1n.propability, \
+                                        point1n.task_strategy, \
+                                        point1n.comm_strategy))
+
+        for n in g2_children:
+            child_1.add_real_node(DecisionNode(n.label + offset, n.propability, n.task_strategy, n.comm_strategy))
         
-        for n in g1_children_labels:
-            parent_2.add_node(n + offset)
+        for n in g1_children:
+            child_2.add_real_node(DecisionNode(n.label + offset, n.propability, n.task_strategy, n.comm_strategy))
 
         #add connections from parents to added nodes
-        for p in g1_parents:
-            parent_1.add_connection(p, point2 + offset, 0)
+        if g1_parents:
+            for p in g1_parents:
+                child_1.add_connection(p, point2 + offset, 0)
 
-        for p in g2_parents:
-            parent_2.add_connection(p, point1 + offset, 0)
+        if g2_parents:
+            for p in g2_parents:
+                child_2.add_connection(p, point1 + offset, 0)
 
         #add connections from added node to it's children
         for child in point1n.neighbours.keys():
-            parent_2.add_connection(point1 + offset, child.label + offset, 0)
+            child_2.add_connection(point1 + offset, child.label + offset, 0)
 
         for child in point2n.neighbours.keys():
-            parent_1.add_connection(point2 + offset, child.label + offset, 0)
+            child_1.add_connection(point2 + offset, child.label + offset, 0)
 
         #add all connections between added children
         for child in g1_children:
             for neigh in child.neighbours.keys():
-                parent_2.add_connection(child.label + offset, neigh.label + offset, 0)
+                child_2.add_connection(child.label + offset, neigh.label + offset, 0)
 
         for child in g2_children:
             for neigh in child.neighbours.keys():
-                parent_1.add_connection(child.label + offset, neigh.label + offset, 0)
-        
+                child_1.add_connection(child.label + offset, neigh.label + offset, 0)
 
-        return parent_1, parent_2
+        #recalculate labels
+        for i, n in enumerate(child_1.nodes):
+            n.label = i
+
+        for i, n in enumerate(child_2.nodes):
+            n.label = i
+
+        return child_1, child_2
 
     @staticmethod
     def mutate(graph) -> Graph:
@@ -106,20 +127,21 @@ class DecisionGraph(Graph):
         dg = DecisionGraph()
         pr = Procedures.instance
 
-        dg.add_node(DecisionNode(0, 1, pr.get_oper(), pr.get_comm()))
+        dg.add_real_node(DecisionNode(0, 1, pr.get_oper(), pr.get_comm()))
         for i in range(1, count):
-            dg.add_node(DecisionNode(i, (random.random() * 0.9 + 0.1), pr.get_oper(), pr.get_comm()))
+            dg.add_real_node(DecisionNode(i, (random.random() * 0.9 + 0.1), pr.get_oper(), pr.get_comm()))
 
-        dg.add_connection(0, 1, 0)
-        connected.extend([0, 1])
-        for n in dg.nodes:
-            if n.label in connected:
-                continue
-            else:
-                dest = random.sample(connected, k=1)[0]
-                logging.debug(n.label, " -> ", dest)
-                dg.add_connection(n.label, dest, 0)
-                connected.append(n.label)
+        if count > 1:
+            dg.add_connection(0, 1, 0)
+            connected.extend([0, 1])
+            for n in dg.nodes:
+                if n.label in connected:
+                    continue
+                else:
+                    dest = random.sample(connected, k=1)[0]
+                    logging.debug(n.label, " -> ", dest)
+                    dg.add_connection(n.label, dest, 0)
+                    connected.append(n.label)
         
         return dg
 
