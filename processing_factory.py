@@ -212,11 +212,11 @@ if __name__ == "__main__":
 
     dg = DecisionGraph()
     pr = Procedures.instance
-    
-    dg.add_node(DecisionNode(0, 1.0, pr.find_operation_3, pr.find_comm_3))
-    dg.add_node(DecisionNode(1, 0.3, pr.find_operation_3, pr.find_comm_3))
-    dg.add_node(DecisionNode(2, 0.2, pr.find_operation_3, pr.find_comm_3))
-    dg.add_node(DecisionNode(3, 0.5, pr.find_operation_3, pr.find_comm_3))
+
+    dg.add_real_node(DecisionNode(0, 1.0, pr.find_operation_3, pr.find_comm_3))
+    dg.add_real_node(DecisionNode(1, 0.3, pr.find_operation_3, pr.find_comm_3))
+    dg.add_real_node(DecisionNode(2, 0.2, pr.find_operation_3, pr.find_comm_3))
+    dg.add_real_node(DecisionNode(3, 0.5, pr.find_operation_3, pr.find_comm_3))
     dg.add_connection(0, 1, 0)
     dg.add_connection(1, 2, 0)
     dg.add_connection(0, 3, 0)

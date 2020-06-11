@@ -101,3 +101,37 @@ class Graph:
             return parents
         return None
 
+    def get_all_children(self, node: int) -> list:
+        children = []
+        self._get_all_children(self.find_node(node), children)
+        return children
+    
+    def _get_all_children(self, node: Node, children = []) -> list:
+        for neigh in node.neighbours.keys():
+            children.append(neigh.label)
+            self._get_all_children(neigh, children)
+
+    def __str__(self):
+        out = ""
+        for node in self.nodes:
+            out += str(node.label) + ": "
+            for neigh in node.neighbours.keys():
+                out += str(neigh.label) + ", "
+            out += "\n"
+        return out
+
+if __name__ == "__main__":
+    dg = Graph()
+    
+    dg.add_node(0)
+    dg.add_node(1)
+    dg.add_node(2)
+    dg.add_node(3)
+    dg.add_connection(0, 1, 0)
+    dg.add_connection(1, 2, 0)
+    dg.add_connection(0, 3, 0)
+
+
+
+    [print(x.label) for x in dg.get_all_children(0)]
+
